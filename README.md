@@ -1,5 +1,5 @@
 # artificial_intelligence_js
 
-[Reflex agent](https://luisespino.github.io/artificial_intelligence_js/01_reflex_agent.html)
+[Reflex agent](https://hugofiguer9777.github.io/IA_Tarea2/01_reflex_agent.html)
 
 
