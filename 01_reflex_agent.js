@@ -11,7 +11,7 @@ function test(states){
 	var location = states[0];		
 	var state = states[0] == "A" ? states[1] : states[2];
 	var action_result = reflex_agent(location, state);
-	document.getElementById("log").innerHTML+="<br>Location: ".concat(location).concat(" | Action: ").concat(action_result).concat(" | Contador: ").concat(contador);
+	document.getElementById("log").innerHTML+="<br>Lugar: ".concat(location).concat(" | Accion: ").concat(action_result);
 	if (action_result == "CLEAN"){
 		contador = 0;
 		if (location == "A") states[1] = "CLEAN";
