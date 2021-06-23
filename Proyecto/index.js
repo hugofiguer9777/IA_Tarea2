@@ -246,7 +246,7 @@ function toMatrix(arreglo){
   return res;
 }
 
-function obtenerValorParametro(sParametroNombre) {
+/*function obtenerValorParametro(sParametroNombre) {
     var sPaginaURL = window.location.search.substring(1);
      var sURLVariables = sPaginaURL.split('&');
       for (var i = 0; i < sURLVariables.length; i++) {
@@ -264,3 +264,4 @@ console.log("Turno: " + turno);
 console.log("Estado: " + estado);
 //body=document.body.innerTex = " Estado" + estado;
 //body = document.body.innerText = 35;
+*/
