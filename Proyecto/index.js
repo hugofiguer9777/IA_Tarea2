@@ -50,9 +50,8 @@ function calcValue(posicion) {
 }
 
 function keeploking(posicion, turno) {
-  
   if (gametablero[posicion.row][posicion.column] != 2) {
-    return true; // Ya no necesito buscar
+    return true;
   }
   return false;
 }
@@ -196,6 +195,7 @@ function getValidMoves(turno, posiciones, tablero) {
       let SO = tablero[row + 1][column - 1];
       let O = tablero[row][column - 1];
       let NO = tablero[row - 1][column - 1];
+      // N
       if (N != "2" && N != turno) {
         valid_moves.push({
           row: row - 1,
@@ -204,6 +204,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // NE
       if (NE != "2" && NE != turno) {
         valid_moves.push({
           row: row - 1,
@@ -212,6 +213,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // E
       if (E != "2" && E != turno) {
         valid_moves.push({
           row: row,
@@ -220,6 +222,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // SE
       if (SE != "2" && SE != turno) {
         valid_moves.push({
           row: row + 1,
@@ -228,6 +231,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // S
       if (S != "2" && S != turno) {
         valid_moves.push({
           row: row + 1,
@@ -236,6 +240,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // So
       if (SO != "2" && SO != turno) {
         valid_moves.push({
           row: row + 1,
@@ -244,6 +249,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // O
       if (O != "2" && O != turno) {
         valid_moves.push({
           row: row,
@@ -252,6 +258,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // No
       if (NO != "2" && NO != turno) {
         valid_moves.push({
           row: row - 1,
@@ -266,6 +273,7 @@ function getValidMoves(turno, posiciones, tablero) {
       let E = tablero[row][column + 1];
       let SE = tablero[row + 1][column + 1];
       let S = tablero[row + 1][column];
+      // N
       if (N != "2" && N != turno) {
         valid_moves.push({
           row: row - 1,
@@ -274,6 +282,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // NE
       if (NE != "2" && NE != turno) {
         valid_moves.push({
           row: row - 1,
@@ -282,6 +291,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // E
       if (E != "2" && E != turno) {
         valid_moves.push({
           row: row,
@@ -290,6 +300,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // SE
       if (SE != "2" && SE != turno) {
         valid_moves.push({
           row: row + 1,
@@ -298,6 +309,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // S
       if (S != "2" && S != turno) {
         valid_moves.push({
           row: row + 1,
@@ -312,6 +324,7 @@ function getValidMoves(turno, posiciones, tablero) {
       let SO = tablero[row + 1][column - 1];
       let O = tablero[row][column - 1];
       let NO = tablero[row - 1][column - 1];
+      // N
       if (N != "2" && N != turno) {
         valid_moves.push({
           row: row - 1,
@@ -320,6 +333,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // S
       if (S != "2" && S != turno) {
         valid_moves.push({
           row: row + 1,
@@ -328,6 +342,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // So
       if (SO != "2" && SO != turno) {
         valid_moves.push({
           row: row + 1,
@@ -336,6 +351,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // O
       if (O != "2" && O != turno) {
         valid_moves.push({
           row: row,
@@ -344,6 +360,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // No
       if (NO != "2" && NO != turno) {
         valid_moves.push({
           row: row - 1,
@@ -358,6 +375,7 @@ function getValidMoves(turno, posiciones, tablero) {
       let S = tablero[row + 1][column];
       let SO = tablero[row + 1][column - 1];
       let O = tablero[row][column - 1];
+      // E
       if (E != "2" && E != turno) {
         valid_moves.push({
           row: row,
@@ -366,6 +384,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // SE
       if (SE != "2" && SE != turno) {
         valid_moves.push({
           row: row + 1,
@@ -374,6 +393,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // S
       if (S != "2" && S != turno) {
         valid_moves.push({
           row: row + 1,
@@ -382,6 +402,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // So
       if (SO != "2" && SO != turno) {
         valid_moves.push({
           row: row + 1,
@@ -390,6 +411,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // O
       if (O != "2" && O != turno) {
         valid_moves.push({
           row: row,
@@ -404,6 +426,7 @@ function getValidMoves(turno, posiciones, tablero) {
       let E = tablero[row][column + 1];
       let O = tablero[row][column - 1];
       let NO = tablero[row - 1][column - 1];
+      // N
       if (N != "2" && N != turno) {
         valid_moves.push({
           row: row - 1,
@@ -412,6 +435,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // NE
       if (NE != "2" && NE != turno) {
         valid_moves.push({
           row: row - 1,
@@ -420,6 +444,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // E
       if (E != "2" && E != turno) {
         valid_moves.push({
           row: row,
@@ -428,6 +453,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // O
       if (O != "2" && O != turno) {
         valid_moves.push({
           row: row,
@@ -436,6 +462,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // No
       if (NO != "2" && NO != turno) {
         valid_moves.push({
           row: row - 1,
@@ -448,7 +475,7 @@ function getValidMoves(turno, posiciones, tablero) {
       let E = tablero[row][column + 1];
       let SE = tablero[row + 1][column + 1];
       let S = tablero[row + 1][column];
-      
+      // E
       if (E != "2" && E != turno) {
         valid_moves.push({
           row: row,
@@ -457,6 +484,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // SE
       if (SE != "2" && SE != turno) {
         valid_moves.push({
           row: row + 1,
@@ -465,6 +493,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // S
       if (S != "2" && S != turno) {
         valid_moves.push({
           row: row + 1,
@@ -477,6 +506,7 @@ function getValidMoves(turno, posiciones, tablero) {
       let S = tablero[row + 1][column];
       let SO = tablero[row + 1][column - 1];
       let O = tablero[row][column - 1];
+      // S
       if (S != "2" && S != turno) {
         valid_moves.push({
           row: row + 1,
@@ -485,6 +515,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // So
       if (SO != "2" && SO != turno) {
         valid_moves.push({
           row: row + 1,
@@ -493,6 +524,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // O
       if (O != "2" && O != turno) {
         valid_moves.push({
           row: row,
@@ -514,6 +546,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // O
       if (O != "2" && O != turno) {
         valid_moves.push({
           row: row,
@@ -522,6 +555,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // No
       if (NO != "2" && NO != turno) {
         valid_moves.push({
           row: row - 1,
@@ -543,6 +577,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // NE
       if (NE != "2" && NE != turno) {
         valid_moves.push({
           row: row - 1,
@@ -551,6 +586,7 @@ function getValidMoves(turno, posiciones, tablero) {
           value: value,
         });
       }
+      // E
       if (E != "2" && E != turno) {
         valid_moves.push({
           row: row,
@@ -562,6 +598,13 @@ function getValidMoves(turno, posiciones, tablero) {
     }
   }
   return valid_moves;
+}
+
+function showtablero(tablero) {
+  console.log([0, 1, 2, 3, 4, 5, 6, 7]);
+  for (let i = 0; i < 8; i++) {
+    console.log(tablero[i]);
+  }
 }
 
 function imprimirValor(posicion) {
@@ -599,7 +642,10 @@ app.get("/", (req, res) => {
     for (let i = 0; i < valid_moves.length; i++) {
       let result = followTrail(valid_moves[i], valid_moves[i].value);
       arbol.push(result);
+      
     }
+    console.log("ARBOL");
+    console.log(arbol);
     let move_to = `${moveTo(arbol, turno, -9999999, 0)}`;
     console.log("IA: MOVED TO " + move_to);
     return res.send(move_to);
@@ -609,6 +655,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(port, () => {
-  
   console.log(`Proyecto en puerto> ${port}`);
 });
