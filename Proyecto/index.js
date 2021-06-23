@@ -36,7 +36,7 @@ function getMyposiciones(turno, tablero) {
         posiciones[contador] = {
           row: i,
           column: j,
-          value: calcularValor({ row: i, column: j }),
+          value: calcValue({ row: i, column: j }),
         };
         contador++;
       }
@@ -45,11 +45,11 @@ function getMyposiciones(turno, tablero) {
   return posiciones;
 }
 
-function calcularValor(posicion) {
+function calcValue(posicion) {
   return heuristica[posicion.row][posicion.column];
 }
 
-function bloquear(posicion, turno) {
+function keeploking(posicion, turno) {
   
   if (gametablero[posicion.row][posicion.column] != 2) {
     return true; // Ya no necesito buscar
@@ -57,8 +57,8 @@ function bloquear(posicion, turno) {
   return false;
 }
 
-function seguir(posicion, valor) {
-  valor += calcularValor(posicion);
+function followTrail(posicion, valor) {
+  valor += calcValue(posicion);
   try {
     if (posicion.direccion == "N") {
       let nex_position = {
@@ -66,12 +66,12 @@ function seguir(posicion, valor) {
         row: posicion.row - 1,
         column: posicion.column,
       };
-      if (bloquear(posicion)) {
-        return seguir(nex_position, calcularValor(nex_position));
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcularValor(nex_position),
+        heuristica: valor + calcValue(nex_position),
       };
     }
     if (posicion.direccion == "E") {
@@ -80,12 +80,12 @@ function seguir(posicion, valor) {
         row: posicion.row,
         column: posicion.column + 1,
       };
-      if (bloquear(posicion)) {
-        return seguir(nex_position, calcularValor(nex_position));
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcularValor(nex_position),
+        heuristica: valor + calcValue(nex_position),
       };
     }
     if (posicion.direccion == "SE") {
@@ -94,12 +94,12 @@ function seguir(posicion, valor) {
         row: posicion.row + 1,
         column: posicion.column + 1,
       };
-      if (bloquear(posicion)) {
-        return seguir(nex_position, calcularValor(nex_position));
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcularValor(nex_position),
+        heuristica: valor + calcValue(nex_position),
       };
     }
     if (posicion.direccion == "S") {
@@ -108,12 +108,12 @@ function seguir(posicion, valor) {
         row: posicion.row + 1,
         column: posicion.column,
       };
-      if (bloquear(posicion)) {
-        return seguir(nex_position, calcularValor(nex_position));
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcularValor(posicion),
+        heuristica: valor + calcValue(posicion),
       };
     }
     if (posicion.direccion == "O") {
@@ -122,12 +122,12 @@ function seguir(posicion, valor) {
         row: posicion.row,
         column: posicion.column - 1,
       };
-      if (bloquear(posicion)) {
-        return seguir(nex_position, calcularValor(nex_position));
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcularValor(posicion),
+        heuristica: valor + calcValue(posicion),
       };
     }
     if (posicion.direccion == "NE") {
@@ -136,12 +136,12 @@ function seguir(posicion, valor) {
         row: posicion.row - 1,
         column: posicion.column + 1,
       };
-      if (bloquear(posicion)) {
-        return seguir(nex_position, calcularValor(nex_position));
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcularValor(posicion),
+        heuristica: valor + calcValue(posicion),
       };
     }
     if (posicion.direccion == "SO") {
@@ -150,12 +150,12 @@ function seguir(posicion, valor) {
         row: posicion.row + 1,
         column: posicion.column - 1,
       };
-      if (bloquear(posicion)) {
-        return seguir(nex_position, calcularValor(nex_position));
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcularValor(nex_position),
+        heuristica: valor + calcValue(nex_position),
       };
     }
     if (posicion.direccion == "NO") {
@@ -164,12 +164,12 @@ function seguir(posicion, valor) {
         row: posicion.row - 1,
         column: posicion.column - 1,
       };
-      if (bloquear(posicion)) {
-        return seguir(nex_position, calcularValor(nex_position));
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcularValor(nex_position),
+        heuristica: valor + calcValue(nex_position),
       };
     }
   } catch (TypeError) {
@@ -597,7 +597,7 @@ app.get("/", (req, res) => {
     let valid_moves = getValidMoves(turno, posiciones, gametablero);
     let arbol = [];
     for (let i = 0; i < valid_moves.length; i++) {
-      let result = seguir(valid_moves[i], valid_moves[i].value);
+      let result = followTrail(valid_moves[i], valid_moves[i].value);
       arbol.push(result);
     }
     let move_to = `${moveTo(arbol, turno, -9999999, 0)}`;
