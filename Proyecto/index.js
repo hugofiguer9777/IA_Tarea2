@@ -1,6 +1,6 @@
 const express = require("express"); //Import the express dependency
 const app = express(); //Instantiate an express app, the main work horse of this server
-const port = 3000; //Save the port number where your server will be listening
+const port = 8080; //Save the port number where your server will be listening
 
 var gametablero = new Array(8);
 for (let i = 0; i < gametablero.length; i++) {
