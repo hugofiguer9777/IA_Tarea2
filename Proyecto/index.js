@@ -1,6 +1,6 @@
-const express = require("express"); //Import the express dependency
-const app = express(); //Instantiate an express app, the main work horse of this server
-const port = 8080; //Save the port number where your server will be listening
+const express = require("express");
+const app = express();
+const port = 3000;
 
 var gametablero = new Array(8);
 for (let i = 0; i < gametablero.length; i++) {
@@ -16,15 +16,6 @@ heuristica[4] = [10, -5, 3, 3, 3, 3, -5, 10];
 heuristica[5] = [20, -5, 15, 4, 4, 15, -5, 20];
 heuristica[6] = [-20, -40, -5, -5, -5, -5, -40, -20];
 heuristica[7] = [120, -20, 20, 10, 10, 20, -20, 120];
-
-// heuristica[0] = [25, -5, 15, 10, 10, 15, -5, 25];
-// heuristica[1] = [-5, -10, -4, 2, 2, -4, -10, -5];
-// heuristica[2] = [15, -4, 3, 4, 4, 3, -4, 15];
-// heuristica[3] = [10, 2, 4, 3, 3, 4, 2, 10];
-// heuristica[4] = [10, 2, 4, 3, 3, 4, 2, 10];
-// heuristica[5] = [15, -4, 3, 4, 4, 3, -4, 15];
-// heuristica[6] = [-5, -10, -4, 2, 2, -4, -10, -5];
-// heuristica[7] = [25, -5, 15, 10, 10, 15, -5, 25];
 
 function mapToMatrix(estado) {
   let iterador = 0;
@@ -54,39 +45,17 @@ function getMyposiciones(turno, tablero) {
   return posiciones;
 }
 
-/**
- * Dada una posicion retorna un valor acorde a la matriz
- * de euristicas.
- */
 function calcValue(posicion) {
   return heuristica[posicion.row][posicion.column];
 }
 
-/**
- * Verifica si en la posicion que recibe como parametro existe una ficha
- * que me permita continuar buscando.
- */
 function keeploking(posicion, turno) {
-  // Solamente busco posiciones validas, es decir posiciones en blanco, si de repente
-  // tengo todas las fichas en esa direccion de mi color las ignoro.
   if (gametablero[posicion.row][posicion.column] != 2) {
-    return true; // Ya no necesito buscar
+    return true;
   }
   return false;
 }
-/**
- * Dada una posicion y una direccion, seguira en busca de una
- * posicion vacia en la direccion dada, si no esta vacia y no es
- * del mismo turno entonces retorna la misma funcion en busca de
- * la siguiente tabla.
- *
- * Funcion recursiva, devolvera 0 para indicar que no se pudo colocar
- * la ficha en caso llegue a los bordes del tablero sin encontrar un espacio
- * libre.
- *
- * Al ser recursiva devolvera un valor que sera la sumatoria de todas
- * las casillas visitadas, el valor de las casillas se tomara de la euristica.
- */
+
 function followTrail(posicion, valor) {
   valor += calcValue(posicion);
   try {
@@ -204,7 +173,7 @@ function followTrail(posicion, valor) {
     }
   } catch (TypeError) {
     console.log("No se pudo encontrar una posicion valida para la ficha.");
-    return 0; // No se pudo encontrar una posicion a la ficha
+    return 0;
   }
 }
 
@@ -647,7 +616,7 @@ function moveTo(movimientos, turno, max, index) {
     console.log(movimientos);
   }
   if (movimientos.length === 0) {
-    console.log("nOS QUEDAMOS sin movimientos posibles");
+    console.log("Sin movimientos posibles");
     return "00";
   }
 
@@ -672,11 +641,7 @@ app.get("/", (req, res) => {
     let arbol = [];
     for (let i = 0; i < valid_moves.length; i++) {
       let result = followTrail(valid_moves[i], valid_moves[i].value);
-      // if (result && result != 0) {
-      //   if (gametablero[result.row][result.column] == "2") {
       arbol.push(result);
-      //   }
-      // }
     }
     console.log("ARBOL");
     console.log(arbol);
@@ -688,9 +653,6 @@ app.get("/", (req, res) => {
   res.send("24");
 });
 
-// Place your piece on an empty square so that one (or more) of the opponent's pieces are between yours.
-
 app.listen(port, () => {
-  //server starts listening for any attempts from a client to connect at port: {port}
   console.log(`Now listening on port ${port}`);
 });
