@@ -10,12 +10,12 @@ app.get("/", (req, res) => {
   let turno = req.query.turno;
   let estado = req.query.estado;
   if (estado) {
-    mapToMatrix(estado);
-    let posiciones = getMyposiciones(turno, gametablero);
-    let valid_moves = getValidMoves(turno, posiciones, gametablero);
+    toMatriz(estado);
+    let posiciones = getPosiciones(turno, tableroJuego);
+    let valid_moves = getMovimientosValidos(turno, posiciones, tableroJuego);
     let arbol = [];
     for (let i = 0; i < valid_moves.length; i++) {
-      let result = followTrail(valid_moves[i], valid_moves[i].value);
+      let result = continuar(valid_moves[i], valid_moves[i].value);
       arbol.push(result);
     }
     let move_to = `${moveTo(arbol, turno, -9999999, 0)}`;
@@ -26,9 +26,9 @@ app.get("/", (req, res) => {
   res.send("24");
 });
 
-var gametablero = new Array(8);
-for (let i = 0; i < gametablero.length; i++) {
-  gametablero[i] = new Array(8);
+var tableroJuego = new Array(8);
+for (let i = 0; i < tableroJuego.length; i++) {
+  tableroJuego[i] = new Array(8);
 }
 
 const heuristica = new Array(8);
@@ -41,17 +41,17 @@ heuristica[5] = [20, -5, 15, 4, 4, 15, -5, 20];
 heuristica[6] = [-20, -40, -5, -5, -5, -5, -40, -20];
 heuristica[7] = [120, -20, 20, 10, 10, 20, -20, 120];
 
-function mapToMatrix(estado) {
+function toMatriz(estado) {
   let iterador = 0;
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
-      gametablero[i][j] = estado[iterador];
+      tableroJuego[i][j] = estado[iterador];
       iterador++;
     }
   }
 }
 
-function getMyposiciones(turno, tablero) {
+function getPosiciones(turno, tablero) {
   let posiciones = [];
   let contador = 0;
   for (let i = 0; i < 8; i++) {
@@ -60,7 +60,7 @@ function getMyposiciones(turno, tablero) {
         posiciones[contador] = {
           row: i,
           column: j,
-          value: calcValue({ row: i, column: j }),
+          value: calcularValor({ row: i, column: j }),
         };
         contador++;
       }
@@ -69,19 +69,19 @@ function getMyposiciones(turno, tablero) {
   return posiciones;
 }
 
-function calcValue(posicion) {
+function calcularValor(posicion) {
   return heuristica[posicion.row][posicion.column];
 }
 
-function keeploking(posicion, turno) {
-  if (gametablero[posicion.row][posicion.column] != 2) {
+function bloqueo(posicion, turno) {
+  if (tableroJuego[posicion.row][posicion.column] != 2) {
     return true;
   }
   return false;
 }
 
-function followTrail(posicion, valor) {
-  valor += calcValue(posicion);
+function continuar(posicion, valor) {
+  valor += calcularValor(posicion);
   try {
     if (posicion.direccion == "N") {
       let nex_position = {
@@ -89,12 +89,12 @@ function followTrail(posicion, valor) {
         row: posicion.row - 1,
         column: posicion.column,
       };
-      if (keeploking(posicion)) {
-        return followTrail(nex_position, calcValue(nex_position));
+      if (bloqueo(posicion)) {
+        return continuar(nex_position, calcularValor(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcValue(nex_position),
+        heuristica: valor + calcularValor(nex_position),
       };
     }
     if (posicion.direccion == "E") {
@@ -103,12 +103,12 @@ function followTrail(posicion, valor) {
         row: posicion.row,
         column: posicion.column + 1,
       };
-      if (keeploking(posicion)) {
-        return followTrail(nex_position, calcValue(nex_position));
+      if (bloqueo(posicion)) {
+        return continuar(nex_position, calcularValor(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcValue(nex_position),
+        heuristica: valor + calcularValor(nex_position),
       };
     }
     if (posicion.direccion == "SE") {
@@ -117,12 +117,12 @@ function followTrail(posicion, valor) {
         row: posicion.row + 1,
         column: posicion.column + 1,
       };
-      if (keeploking(posicion)) {
-        return followTrail(nex_position, calcValue(nex_position));
+      if (bloqueo(posicion)) {
+        return continuar(nex_position, calcularValor(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcValue(nex_position),
+        heuristica: valor + calcularValor(nex_position),
       };
     }
     if (posicion.direccion == "S") {
@@ -131,12 +131,12 @@ function followTrail(posicion, valor) {
         row: posicion.row + 1,
         column: posicion.column,
       };
-      if (keeploking(posicion)) {
-        return followTrail(nex_position, calcValue(nex_position));
+      if (bloqueo(posicion)) {
+        return continuar(nex_position, calcularValor(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcValue(posicion),
+        heuristica: valor + calcularValor(posicion),
       };
     }
     if (posicion.direccion == "O") {
@@ -145,12 +145,12 @@ function followTrail(posicion, valor) {
         row: posicion.row,
         column: posicion.column - 1,
       };
-      if (keeploking(posicion)) {
-        return followTrail(nex_position, calcValue(nex_position));
+      if (bloqueo(posicion)) {
+        return continuar(nex_position, calcularValor(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcValue(posicion),
+        heuristica: valor + calcularValor(posicion),
       };
     }
     if (posicion.direccion == "NE") {
@@ -159,12 +159,12 @@ function followTrail(posicion, valor) {
         row: posicion.row - 1,
         column: posicion.column + 1,
       };
-      if (keeploking(posicion)) {
-        return followTrail(nex_position, calcValue(nex_position));
+      if (bloqueo(posicion)) {
+        return continuar(nex_position, calcularValor(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcValue(posicion),
+        heuristica: valor + calcularValor(posicion),
       };
     }
     if (posicion.direccion == "SO") {
@@ -173,12 +173,12 @@ function followTrail(posicion, valor) {
         row: posicion.row + 1,
         column: posicion.column - 1,
       };
-      if (keeploking(posicion)) {
-        return followTrail(nex_position, calcValue(nex_position));
+      if (bloqueo(posicion)) {
+        return continuar(nex_position, calcularValor(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcValue(nex_position),
+        heuristica: valor + calcularValor(nex_position),
       };
     }
     if (posicion.direccion == "NO") {
@@ -187,12 +187,12 @@ function followTrail(posicion, valor) {
         row: posicion.row - 1,
         column: posicion.column - 1,
       };
-      if (keeploking(posicion)) {
-        return followTrail(nex_position, calcValue(nex_position));
+      if (bloqueo(posicion)) {
+        return continuar(nex_position, calcularValor(nex_position));
       }
       return {
         ...posicion,
-        heuristica: valor + calcValue(nex_position),
+        heuristica: valor + calcularValor(nex_position),
       };
     }
   } catch (TypeError) {
@@ -201,7 +201,7 @@ function followTrail(posicion, valor) {
   }
 }
 
-function getValidMoves(turno, posiciones, tablero) {
+function getMovimientosValidos(turno, posiciones, tablero) {
   let row = 0;
   let column = 0;
   let valid_moves = [];
@@ -625,7 +625,7 @@ function getValidMoves(turno, posiciones, tablero) {
 }
 
 function imprimirValor(posicion) {
-  return gametablero[posicion.row][posicion.column];
+  return tableroJuego[posicion.row][posicion.column];
 }
 function moveTo(movimientos, turno, max, index) {
   if (movimientos.length > 1) {
