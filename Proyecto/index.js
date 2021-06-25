@@ -642,7 +642,7 @@ function moveTo(movimientos, turno, max, index) {
     res = movimientos.pop();
   } while (typeof res === "undefined");
 
-  //console.log("Turno: " + turno + " OCUPADO POR " + imprimirValor(res));
+  console.log("Turno: " + turno + " OCUPADO POR " + imprimirValor(res));
   console.dir(res);
 
   return `${res.row}${res.column}`;
