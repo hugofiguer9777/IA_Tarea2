@@ -11,15 +11,15 @@ app.get('/', (req, res) => {
   console.log(req.query.estado)
   var turno = req.query.turno
   var estado = req.query.estado
-  var matrix = toMatrix(estado.toString());
+  var matrix = toMatriz(estado.toString());
 
-  minimax(turno, matrix, true, 1, 2)
+  miniMax(turno, matrix, true, 1, 2)
 
 
   res.send('Prueba 24');
 })
 
-function ejecutarEstado(turno, estado, movimiento) {
+function execEstado(turno, estado, movimiento) {
   var nuevoestado = []
   for (i = 0; i < 8; i++) {
     nuevoestado.push('')
@@ -35,25 +35,25 @@ function ejecutarEstado(turno, estado, movimiento) {
   return nuevoestado
 }
 
-function minimax(turno, estado, maximizando, profundidad, maxprof) {
+function miniMax(turno, estado, maximizando, profundidad, maxprof) {
   if (profundidad == maxprof) {
     return;
   }
-  var movimientosposibles = getMovimientosPosibles(turno, estado);
+  var movimientosposibles = getMovPosibles(turno, estado);
   var estadoshijos = [];
   for (i in movimientosposibles) {
-    var nuevoestado = ejecutarEstado(turno, estado, movimientosposibles[i]);
+    var nuevoestado = execEstado(turno, estado, movimientosposibles[i]);
     estadoshijos.push(nuevoestado);
   }
 
 }
 
-function getMovimientosPosibles(turno, estado) {
+function getMovPosibles(turno, estado) {
 
   var movimientos = [];
   for (i = 0; i < 8; i++) {
     for (j = 0; j < 8; j++) {
-      var comida = isLegalMove(estado, turno, i, j);
+      var comida = movimientoLegal(estado, turno, i, j);
       if (comida > 0) {
         movimientos.push([i, j, comida]);
       }
@@ -62,14 +62,14 @@ function getMovimientosPosibles(turno, estado) {
   return movimientos;
 }
 
-function isLegalMove(estado, turno, fila, columna) {
+function movimientoLegal(estado, turno, fila, columna) {
   if (estado[fila][columna] != '2') {
     return 0;
   }
-  return puedeComer(estado, turno, fila, columna)
+  return comer(estado, turno, fila, columna)
 }
 
-function puedeComer(estado, turno, fila, columna) {
+function comer(estado, turno, fila, columna) {
 
   var oponente = '1'
 
@@ -236,7 +236,7 @@ function puedeComer(estado, turno, fila, columna) {
   return comidatotal;
 }
 
-function toMatrix(arreglo) {
+function toMatriz(arreglo) {
   var size = 8;
   var res = [];
   for (var i = 0; i < arreglo.length; i = i + size)
