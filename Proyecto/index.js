@@ -1,452 +1,696 @@
-const express = require("express");
-const app = express();
-const port = process.env.PORT || 3000;
+const express = require("express"); //Import the express dependency
+const app = express(); //Instantiate an express app, the main work horse of this server
+const port = 8080; //Save the port number where your server will be listening
 
-var og_board = [
-  [0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0],
-];
-
-var heuristic_board = [
-  [120, -20, 20, 5, 5, 20, -20, 120],
-  [-20, -40, -5, -5, -5, -5, -40, -20],
-  [20, -5, 15, 3, 3, 15, -5, 20],
-  [5, -5, 3, 3, 3, 3, -5, 5],
-  [5, -5, 3, 3, 3, 3, -5, 5],
-  [20, -5, 15, 3, 3, 15, -5, 20],
-  [-20, -40, -5, -5, -5, -5, -40, -20],
-  [120, -20, 20, 5, 5, 20, -20, 120],
-];
-
-var moves = [];
-var enemy_moves = [];
-
-// ./ngrok http 3000
-// http://luisespino.com/temp/games/reversi/index.php
-
-function sort_and_clean_moves() {
-  let aux = new Set();
-  for (let item of moves) {
-    aux.add(item.spot);
-  }
-  moves = [];
-  for (let item of aux) {
-    moves.push({
-      spot: item,
-      h: heuristic_board[parseInt(item.split("")[0])][
-        parseInt(item.split("")[1])
-      ],
-    });
-  }
-  moves.sort((a, b) => {
-    if (a.h > b.h) return -1;
-    else return 1;
-  });
+var gametablero = new Array(8);
+for (let i = 0; i < gametablero.length; i++) {
+  gametablero[i] = new Array(8);
 }
 
-function copy_array() {
-  let array = [
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-  ];
+const heuristica = new Array(8);
+heuristica[0] = [120, -20, 20, 10, 10, 20, -20, 120];
+heuristica[1] = [-20, -40, -5, -5, -5, -5, -40, -20];
+heuristica[2] = [20, -5, 15, 3, 3, 15, -5, 20];
+heuristica[3] = [10, -5, 3, 3, 3, 3, -5, 10];
+heuristica[4] = [10, -5, 3, 3, 3, 3, -5, 10];
+heuristica[5] = [20, -5, 15, 4, 4, 15, -5, 20];
+heuristica[6] = [-20, -40, -5, -5, -5, -5, -40, -20];
+heuristica[7] = [120, -20, 20, 10, 10, 20, -20, 120];
 
+// heuristica[0] = [25, -5, 15, 10, 10, 15, -5, 25];
+// heuristica[1] = [-5, -10, -4, 2, 2, -4, -10, -5];
+// heuristica[2] = [15, -4, 3, 4, 4, 3, -4, 15];
+// heuristica[3] = [10, 2, 4, 3, 3, 4, 2, 10];
+// heuristica[4] = [10, 2, 4, 3, 3, 4, 2, 10];
+// heuristica[5] = [15, -4, 3, 4, 4, 3, -4, 15];
+// heuristica[6] = [-5, -10, -4, 2, 2, -4, -10, -5];
+// heuristica[7] = [25, -5, 15, 10, 10, 15, -5, 25];
+
+function mapToMatrix(estado) {
+  let iterador = 0;
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
-      array[i][j] = og_board[i][j];
+      gametablero[i][j] = estado[iterador];
+      iterador++;
     }
   }
-
-  return array;
 }
 
-function find_enemy_moves() {
-  if (enemy_moves.length == 0) return 0;
-
-  let aux = new Set();
-  for (let item of enemy_moves) {
-    aux.add(item.spot);
-  }
-  enemy_moves = [];
-  for (let item of aux) {
-    enemy_moves.push({
-      spot: item,
-      h: heuristic_board[parseInt(item.split("")[0])][
-        parseInt(item.split("")[1])
-      ],
-    });
-  }
-  enemy_moves.sort((a, b) => {
-    if (a.h > b.h) return -1;
-    else return 1;
-  });
-  return enemy_moves[0].h;
-}
-
-function minimax(turn) {
-  enemy_moves = [];
-
-  var enemy = turn == "1" ? "0" : "1";
-  let map;
-  let x, y, pos, h;
-  moves = moves.slice(0, 4);
-  for (let i = 0; i < moves.length; i++) {
-    enemy_moves = [];
-    map = copy_array();
-    pos = moves[i].spot;
-    y = parseInt(pos.split("")[0]);
-    x = parseInt(pos.split("")[1]);
-    map[y][x] = turn;
-    enemy_moves = [];
-    find_enemy_spots(enemy, map);
-    h = find_enemy_moves();
-    moves[i].h = moves[i].h - h;
-  }
-
-  moves.sort((a, b) => {
-    if (a.h > b.h) return -1;
-    else return 1;
-  });
-  console.table(moves);
-}
-
-function find_move(move, rival, x, y, board) {
-  var x2 = 0,
-    y2 = 0;
-  let turno = rival == "1" ? "0" : "1";
-  if (move == 0) {
-    x2 = x;
-    for (y2 = y - 1; y2 > 0; y2--) {
-      x2--;
-      if (board[y2][x2] == rival && board[y2 - 1][x2 - 1] == "2") {
-        return y2 - 1 + "" + (x2 - 1);
-      } else if (board[y2][x2] == rival && board[y2 - 1][x2 - 1] == turno)
-        return '99'
-    }
-  } else if (move == 1) {
-    x2 = x;
-    for (y2 = y - 1; y2 > 0; y2--) {
-      if (board[y2][x2] == rival && board[y2 - 1][x2] == "2") {
-        return y2 - 1 + "" + x2;
-      } else if (board[y2][x2] == rival && board[y2 - 1][x2] == turno)
-        return '99'
-    }
-  } else if (move == 2) {
-    x2 = x;
-    for (y2 = y - 1; y2 > 0; y2--) {
-      x2++;
-      if (board[y2][x2] == rival && board[y2 - 1][x2 + 1] == "2") {
-        return y2 - 1 + "" + (x2 + 1);
-      } else if (board[y2][x2] == rival && board[y2 - 1][x2 + 1] == turno)
-        return '99'
-    }
-  } else if (move == 3) {
-    y2 = y;
-    for (x2 = x + 1; x2 < 7; x2++) {
-      if (board[y2][x2] == rival && board[y2][x2 + 1] == "2") {
-        return y2 + "" + (x2 + 1);
-      } else if (board[y2][x2] == rival && board[y2][x2 + 1] == turno)
-        return '99'
-    }
-  } else if (move == 4) {
-    x2 = x;
-    for (y2 = y + 1; y2 < 7; y2++) {
-      x2++;
-      if (board[y2][x2] == rival && board[y2 + 1][x2 + 1] == "2") {
-        return y2 + 1 + "" + (x2 + 1);
-      } else if (board[y2][x2] == rival && board[y2 + 1][x2 + 1] == turno)
-        return '99';
-    }
-  } else if (move == 5) {
-    x2 = x;
-    for (y2 = y + 1; y2 < 7; y2++) {
-      if (board[y2][x2] == rival && board[y2 + 1][x2] == "2") {
-        return y2 + 1 + "" + x2;
-      } else if (board[y2][x2] == rival && board[y2 + 1][x2] == turno)
-        return "99";
-    }
-  } else if (move == 6) {
-    x2 = x;
-    for (y2 = y + 1; y2 < 7; y2++) {
-      x2--;
-      if (board[y2][x2] == rival && board[y2 + 1][x2 - 1] == "2") {
-        return y2 + 1 + "" + (x2 - 1);
-      } else if (board[y2][x2] == rival && board[y2 + 1][x2 - 1] == turno)
-        return "99";
-    }
-  } else if (move == 7) {
-    y2 = y;
-    for (x2 = x - 1; x2 > 0; x2--) {
-      if (board[y2][x2] == rival && board[y2][x2 - 1] == "2") {
-        return y2 + "" + (x2 - 1);
-      } else if (board[y2][x2] == rival && board[y2][x2 - 1] == turno)
-        return "99";
-
-    }
-  }
-  return "99";
-}
-
-function find_spots(turn) {
-  let rival = turn == "1" ? "0" : "1";
-  let spot;
-  for (let y = 0; y < 8; y++) {
-    for (let x = 0; x < 8; x++) {
-      if (og_board[y][x] == turn) {
-        if (y - 1 > 0 && x - 1 > 0 && og_board[y - 1][x - 1] == rival) {
-          // Arriba a la izq
-          spot = find_move(0, rival, x, y, og_board);
-          if (spot != "99")
-            moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (y - 1 > 0 && og_board[y - 1][x] == rival) {
-          // Arriba
-          spot = find_move(1, rival, x, y, og_board);
-          if (spot != "99")
-            moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (y - 1 > 0 && x + 1 < 7 && og_board[y - 1][x + 1] == rival) {
-          // Arriba Derecha
-          spot = find_move(2, rival, x, y, og_board);
-          if (spot != "99")
-            moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (x + 1 < 7 && og_board[y][x + 1] == rival) {
-          // Derecha
-          spot = find_move(3, rival, x, y, og_board);
-          if (spot != "99")
-            moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (y + 1 < 7 && x + 1 < 7 && og_board[y + 1][x + 1] == rival) {
-          // Abajo Derecha
-          spot = find_move(4, rival, x, y, og_board);
-          if (spot != "99")
-            moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (y + 1 < 7 && og_board[y + 1][x] == rival) {
-          // Abajo
-          spot = find_move(5, rival, x, y, og_board);
-          if (spot != "99")
-            moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (y + 1 < 7 && x - 1 > 0 && og_board[y + 1][x - 1] == rival) {
-          // Abajo Izq
-          spot = find_move(6, rival, x, y, og_board);
-          if (spot != "99")
-            moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (x - 1 > 0 && og_board[y][x - 1] == rival) {
-          // Izquierda
-          spot = find_move(7, rival, x, y, og_board);
-          if (spot != "99")
-            moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
+function getMyposiciones(turno, tablero) {
+  let posiciones = [];
+  let contador = 0;
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      if (turno == tablero[i][j]) {
+        posiciones[contador] = {
+          row: i,
+          column: j,
+          value: calcValue({ row: i, column: j }),
+        };
+        contador++;
       }
     }
   }
+  return posiciones;
 }
 
-function find_enemy_spots(turn, board) {
-  let rival = turn == "1" ? "0" : "1";
-  let spot;
-  for (let y = 0; y < 8; y++) {
-    for (let x = 0; x < 8; x++) {
-      if (board[y][x] == turn) {
-        if (y - 1 > 0 && x - 1 > 0 && board[y - 1][x - 1] == rival) {
-          // Arriba a la izq
-          spot = find_move(0, rival, x, y, board);
-          if (spot != "99")
-            enemy_moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (y - 1 > 0 && board[y - 1][x] == rival) {
-          // Arriba
-          spot = find_move(1, rival, x, y, board);
-          if (spot != "99")
-            enemy_moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (y - 1 > 0 && x + 1 < 7 && board[y - 1][x + 1] == rival) {
-          // Arriba Derecha
-          spot = find_move(2, rival, x, y, board);
-          if (spot != "99")
-            enemy_moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (x + 1 < 7 && board[y][x + 1] == rival) {
-          // Derecha
-          spot = find_move(3, rival, x, y, board);
-          if (spot != "99")
-            enemy_moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (y + 1 < 7 && x + 1 < 7 && board[y + 1][x + 1] == rival) {
-          // Abajo Derecha
-          spot = find_move(4, rival, x, y, board);
-          if (spot != "99")
-            enemy_moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (y + 1 < 7 && board[y + 1][x] == rival) {
-          // Abajo
-          spot = find_move(5, rival, x, y, board);
-          if (spot != "99")
-            enemy_moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (y + 1 < 7 && x - 1 > 0 && board[y + 1][x - 1] == rival) {
-          // Abajo Izq
-          spot = find_move(6, rival, x, y, board);
-          if (spot != "99")
-            enemy_moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
-        if (x - 1 > 0 && board[y][x - 1] == rival) {
-          // Izquierda
-          spot = find_move(7, rival, x, y, board);
-          if (spot != "99")
-            enemy_moves.push({
-              spot: spot,
-              h: heuristic_board[parseInt(spot.split("")[0])][
-                parseInt(spot.split("")[1])
-              ],
-            });
-        }
+/**
+ * Dada una posicion retorna un valor acorde a la matriz
+ * de euristicas.
+ */
+function calcValue(posicion) {
+  return heuristica[posicion.row][posicion.column];
+}
+
+/**
+ * Verifica si en la posicion que recibe como parametro existe una ficha
+ * que me permita continuar buscando.
+ */
+function keeploking(posicion, turno) {
+  // Solamente busco posiciones validas, es decir posiciones en blanco, si de repente
+  // tengo todas las fichas en esa direccion de mi color las ignoro.
+  if (gametablero[posicion.row][posicion.column] != 2) {
+    return true; // Ya no necesito buscar
+  }
+  return false;
+}
+/**
+ * Dada una posicion y una direccion, seguira en busca de una
+ * posicion vacia en la direccion dada, si no esta vacia y no es
+ * del mismo turno entonces retorna la misma funcion en busca de
+ * la siguiente tabla.
+ *
+ * Funcion recursiva, devolvera 0 para indicar que no se pudo colocar
+ * la ficha en caso llegue a los bordes del tablero sin encontrar un espacio
+ * libre.
+ *
+ * Al ser recursiva devolvera un valor que sera la sumatoria de todas
+ * las casillas visitadas, el valor de las casillas se tomara de la euristica.
+ */
+function followTrail(posicion, valor) {
+  valor += calcValue(posicion);
+  try {
+    if (posicion.direccion == "N") {
+      let nex_position = {
+        ...posicion,
+        row: posicion.row - 1,
+        column: posicion.column,
+      };
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
       }
+      return {
+        ...posicion,
+        heuristica: valor + calcValue(nex_position),
+      };
     }
+    if (posicion.direccion == "E") {
+      let nex_position = {
+        ...posicion,
+        row: posicion.row,
+        column: posicion.column + 1,
+      };
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
+      }
+      return {
+        ...posicion,
+        heuristica: valor + calcValue(nex_position),
+      };
+    }
+    if (posicion.direccion == "SE") {
+      let nex_position = {
+        ...posicion,
+        row: posicion.row + 1,
+        column: posicion.column + 1,
+      };
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
+      }
+      return {
+        ...posicion,
+        heuristica: valor + calcValue(nex_position),
+      };
+    }
+    if (posicion.direccion == "S") {
+      let nex_position = {
+        ...posicion,
+        row: posicion.row + 1,
+        column: posicion.column,
+      };
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
+      }
+      return {
+        ...posicion,
+        heuristica: valor + calcValue(posicion),
+      };
+    }
+    if (posicion.direccion == "O") {
+      let nex_position = {
+        ...posicion,
+        row: posicion.row,
+        column: posicion.column - 1,
+      };
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
+      }
+      return {
+        ...posicion,
+        heuristica: valor + calcValue(posicion),
+      };
+    }
+    if (posicion.direccion == "NE") {
+      let nex_position = {
+        ...posicion,
+        row: posicion.row - 1,
+        column: posicion.column + 1,
+      };
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
+      }
+      return {
+        ...posicion,
+        heuristica: valor + calcValue(posicion),
+      };
+    }
+    if (posicion.direccion == "SO") {
+      let nex_position = {
+        ...posicion,
+        row: posicion.row + 1,
+        column: posicion.column - 1,
+      };
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
+      }
+      return {
+        ...posicion,
+        heuristica: valor + calcValue(nex_position),
+      };
+    }
+    if (posicion.direccion == "NO") {
+      let nex_position = {
+        ...posicion,
+        row: posicion.row - 1,
+        column: posicion.column - 1,
+      };
+      if (keeploking(posicion)) {
+        return followTrail(nex_position, calcValue(nex_position));
+      }
+      return {
+        ...posicion,
+        heuristica: valor + calcValue(nex_position),
+      };
+    }
+  } catch (TypeError) {
+    console.log("No se pudo encontrar una posicion valida para la ficha.");
+    return 0; // No se pudo encontrar una posicion a la ficha
   }
 }
 
-function fill_board(estado) {
-  var y = 0,
-    x = 0;
-  if (estado != undefined) {
-    for (let z = 0; z < estado.length; z++) {
-      og_board[y][x] = estado[z];
-      x++;
-      if (x == 8) {
-        x = 0;
-        y++;
+function getValidMoves(turno, posiciones, tablero) {
+  let row = 0;
+  let column = 0;
+  let valid_moves = [];
+
+  for (let i = 0; i < posiciones.length; i++) {
+    row = posiciones[i].row;
+    column = posiciones[i].column;
+    value = posiciones[i].value;
+    if (row > 0 && row < 7 && column > 0 && column < 7) {
+      let N = tablero[row - 1][column];
+      let NE = tablero[row - 1][column + 1];
+      let E = tablero[row][column + 1];
+      let SE = tablero[row + 1][column + 1];
+      let S = tablero[row + 1][column];
+      let SO = tablero[row + 1][column - 1];
+      let O = tablero[row][column - 1];
+      let NO = tablero[row - 1][column - 1];
+      // N
+      if (N != "2" && N != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column,
+          direccion: "N",
+          value: value,
+        });
+      }
+      // NE
+      if (NE != "2" && NE != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column + 1,
+          direccion: "NE",
+          value: value,
+        });
+      }
+      // E
+      if (E != "2" && E != turno) {
+        valid_moves.push({
+          row: row,
+          column: column + 1,
+          direccion: "E",
+          value: value,
+        });
+      }
+      // SE
+      if (SE != "2" && SE != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column + 1,
+          direccion: "SE",
+          value: value,
+        });
+      }
+      // S
+      if (S != "2" && S != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column,
+          direccion: "S",
+          value: value,
+        });
+      }
+      // So
+      if (SO != "2" && SO != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column - 1,
+          direccion: "SO",
+          value: value,
+        });
+      }
+      // O
+      if (O != "2" && O != turno) {
+        valid_moves.push({
+          row: row,
+          column: column - 1,
+          direccion: "O",
+          value: value,
+        });
+      }
+      // No
+      if (NO != "2" && NO != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column - 1,
+          direccion: "No",
+          value: value,
+        });
+      }
+    } else if (row > 0 && row < 7 && column == 0) {
+      let N = tablero[row - 1][column];
+      let NE = tablero[row - 1][column + 1];
+      let E = tablero[row][column + 1];
+      let SE = tablero[row + 1][column + 1];
+      let S = tablero[row + 1][column];
+      // N
+      if (N != "2" && N != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column,
+          direccion: "N",
+          value: value,
+        });
+      }
+      // NE
+      if (NE != "2" && NE != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column + 1,
+          direccion: "NE",
+          value: value,
+        });
+      }
+      // E
+      if (E != "2" && E != turno) {
+        valid_moves.push({
+          row: row,
+          column: column + 1,
+          direccion: "E",
+          value: value,
+        });
+      }
+      // SE
+      if (SE != "2" && SE != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column + 1,
+          direccion: "SE",
+          value: value,
+        });
+      }
+      // S
+      if (S != "2" && S != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column,
+          direccion: "S",
+          value: value,
+        });
+      }
+    } else if (row > 0 && row < 7 && column == 7) {
+      let N = tablero[row - 1][column];
+      let S = tablero[row + 1][column];
+      let SO = tablero[row + 1][column - 1];
+      let O = tablero[row][column - 1];
+      let NO = tablero[row - 1][column - 1];
+      // N
+      if (N != "2" && N != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column,
+          direccion: "N",
+          value: value,
+        });
+      }
+      // S
+      if (S != "2" && S != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column,
+          direccion: "S",
+          value: value,
+        });
+      }
+      // So
+      if (SO != "2" && SO != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column - 1,
+          direccion: "SO",
+          value: value,
+        });
+      }
+      // O
+      if (O != "2" && O != turno) {
+        valid_moves.push({
+          row: row,
+          column: column - 1,
+          direccion: "O",
+          value: value,
+        });
+      }
+      // No
+      if (NO != "2" && NO != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column - 1,
+          direccion: "No",
+          value: value,
+        });
+      }
+    } else if (column > 0 && column < 7 && row == 0) {
+      let E = tablero[row][column + 1];
+      let SE = tablero[row + 1][column + 1];
+      let S = tablero[row + 1][column];
+      let SO = tablero[row + 1][column - 1];
+      let O = tablero[row][column - 1];
+      // E
+      if (E != "2" && E != turno) {
+        valid_moves.push({
+          row: row,
+          column: column + 1,
+          direccion: "E",
+          value: value,
+        });
+      }
+      // SE
+      if (SE != "2" && SE != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column + 1,
+          direccion: "SE",
+          value: value,
+        });
+      }
+      // S
+      if (S != "2" && S != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column,
+          direccion: "S",
+          value: value,
+        });
+      }
+      // So
+      if (SO != "2" && SO != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column - 1,
+          direccion: "SO",
+          value: value,
+        });
+      }
+      // O
+      if (O != "2" && O != turno) {
+        valid_moves.push({
+          row: row,
+          column: column - 1,
+          direccion: "O",
+          value: value,
+        });
+      }
+    } else if (column > 0 && column < 7 && row == 7) {
+      let N = tablero[row - 1][column];
+      let NE = tablero[row - 1][column + 1];
+      let E = tablero[row][column + 1];
+      let O = tablero[row][column - 1];
+      let NO = tablero[row - 1][column - 1];
+      // N
+      if (N != "2" && N != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column,
+          direccion: "N",
+          value: value,
+        });
+      }
+      // NE
+      if (NE != "2" && NE != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column + 1,
+          direccion: "NE",
+          value: value,
+        });
+      }
+      // E
+      if (E != "2" && E != turno) {
+        valid_moves.push({
+          row: row,
+          column: column + 1,
+          direccion: "E",
+          value: value,
+        });
+      }
+      // O
+      if (O != "2" && O != turno) {
+        valid_moves.push({
+          row: row,
+          column: column - 1,
+          direccion: "O",
+          value: value,
+        });
+      }
+      // No
+      if (NO != "2" && NO != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column - 1,
+          direccion: "No",
+          value: value,
+        });
+      }
+    } else if (column == 0 && row == 0) {
+      let E = tablero[row][column + 1];
+      let SE = tablero[row + 1][column + 1];
+      let S = tablero[row + 1][column];
+      // E
+      if (E != "2" && E != turno) {
+        valid_moves.push({
+          row: row,
+          column: column + 1,
+          direccion: "E",
+          value: value,
+        });
+      }
+      // SE
+      if (SE != "2" && SE != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column + 1,
+          direccion: "SE",
+          value: value,
+        });
+      }
+      // S
+      if (S != "2" && S != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column,
+          direccion: "S",
+          value: value,
+        });
+      }
+    } else if (column == 7 && row == 0) {
+      let S = tablero[row + 1][column];
+      let SO = tablero[row + 1][column - 1];
+      let O = tablero[row][column - 1];
+      // S
+      if (S != "2" && S != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column,
+          direccion: "S",
+          value: value,
+        });
+      }
+      // So
+      if (SO != "2" && SO != turno) {
+        valid_moves.push({
+          row: row + 1,
+          column: column - 1,
+          direccion: "SO",
+          value: value,
+        });
+      }
+      // O
+      if (O != "2" && O != turno) {
+        valid_moves.push({
+          row: row,
+          column: column - 1,
+          direccion: "O",
+          value: value,
+        });
+      }
+    } else if (column == 7 && row == 7) {
+      let N = tablero[row - 1][column];
+      let O = tablero[row][column - 1];
+      let NO = tablero[row - 1][column - 1];
+      // N
+      if (N != "2" && N != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column,
+          direccion: "N",
+          value: value,
+        });
+      }
+      // O
+      if (O != "2" && O != turno) {
+        valid_moves.push({
+          row: row,
+          column: column - 1,
+          direccion: "O",
+          value: value,
+        });
+      }
+      // No
+      if (NO != "2" && NO != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column - 1,
+          direccion: "No",
+          value: value,
+        });
+      }
+    } else if (column == 0 && row == 7) {
+      let N = tablero[row - 1][column];
+      let NE = tablero[row - 1][column + 1];
+      let E = tablero[row][column + 1];
+      // N
+      if (N != "2" && N != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column,
+          direccion: "N",
+          value: value,
+        });
+      }
+      // NE
+      if (NE != "2" && NE != turno) {
+        valid_moves.push({
+          row: row - 1,
+          column: column + 1,
+          direccion: "NE",
+          value: value,
+        });
+      }
+      // E
+      if (E != "2" && E != turno) {
+        valid_moves.push({
+          row: row,
+          column: column + 1,
+          direccion: "E",
+          value: value,
+        });
       }
     }
   }
+  return valid_moves;
+}
+
+function showtablero(tablero) {
+  console.log([0, 1, 2, 3, 4, 5, 6, 7]);
+  for (let i = 0; i < 8; i++) {
+    console.log(tablero[i]);
+  }
+}
+
+function imprimirValor(posicion) {
+  return gametablero[posicion.row][posicion.column];
+}
+function moveTo(movimientos, turno, max, index) {
+  if (movimientos.length > 1) {
+    movimientos.sort((a, b) => (a.heuristica > b.heuristica ? 1 : -1));
+    console.log(movimientos);
+  }
+  if (movimientos.length === 0) {
+    console.log("nOS QUEDAMOS sin movimientos posibles");
+    return "00";
+  }
+
+  let res = {};
+  do {
+    res = movimientos.pop();
+  } while (typeof res === "undefined");
+
+  console.log("Turno: " + turno + " OCUPADO POR " + imprimirValor(res));
+  console.dir(res);
+
+  return `${res.row}${res.column}`;
 }
 
 app.get("/", (req, res) => {
-  //variable reset
-  moves = [];
-  enemy_moves = [];
-
-  var { turno, estado } = req.query;
-  estado = estado?.split("");
-  fill_board(estado);
-  find_spots(turno);
-  console.log("----------------------------------------");
-  console.table(moves);
-  sort_and_clean_moves();
-  minimax(turno);
-  console.log(`El turno es: ${turno}`);
-  console.log(`El spot es: ${moves[0].spot}`);
-  if (moves.length > 1) {
-    if (moves.length > 3 && moves[0].h == moves[1].h && moves[1].h == moves[2].h) {
-      let indx = getRandomInt(3);
-      console.log(indx);
-      console.log(`El spot random es: ${moves[indx].spot}`);
-      res.send(moves[indx].spot);
-    } else {
-      if (moves[0].h == moves[1].h) {
-        let indx = getRandomInt(2);
-        console.log(indx);
-        console.log(`El spot random es: ${moves[indx].spot}`);
-        res.send(moves[indx].spot);
-      } else res.send(moves[0].spot);
+  let turno = req.query.turno;
+  let estado = req.query.estado;
+  if (estado) {
+    mapToMatrix(estado);
+    let posiciones = getMyposiciones(turno, gametablero);
+    let valid_moves = getValidMoves(turno, posiciones, gametablero);
+    let arbol = [];
+    for (let i = 0; i < valid_moves.length; i++) {
+      let result = followTrail(valid_moves[i], valid_moves[i].value);
+      // if (result && result != 0) {
+      //   if (gametablero[result.row][result.column] == "2") {
+      arbol.push(result);
+      //   }
+      // }
     }
-  } else res.send(moves[0].spot);
+    console.log("ARBOL");
+    console.log(arbol);
+    let move_to = `${moveTo(arbol, turno, -9999999, 0)}`;
+    console.log("IA: MOVED TO " + move_to);
+    return res.send(move_to);
+  }
+  console.log("No hay estado");
+  res.send("24");
 });
 
-function getRandomInt(max) {
-  return Math.floor(Math.random() * max);
-}
+// Place your piece on an empty square so that one (or more) of the opponent's pieces are between yours.
 
 app.listen(port, () => {
-  console.log(`Proyecto corriendo en http://localhost:${port}`);
+  //server starts listening for any attempts from a client to connect at port: {port}
+  console.log(`Now listening on port ${port}`);
 });
