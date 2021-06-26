@@ -1,205 +1,452 @@
-const express = require('express')
-const app = express()
-const port = process.env.PORT || 3000
+const express = require("express");
+const app = express();
+const port = process.env.PORT || 3000;
 
-var jugador;
-var oponente;
-
-var heuristicas = [
-  120, -20, 20, 5, 5, 20, -20, 120,
-  -20, -40, -5, -5, -5, -5, -40, -20,
-  20, -5, 15, 3, 3, 15, -5, 20,
-  5, -5, 3, 3, 3, 3, -5, 5,
-  5, -5, 3, 3, 3, 3, -5, 5,
-  20, -5, 15, 3, 3, 15, -5, 20,
-  -20, -40, -5, -5, -5, -5, -40, -20,
-  120, -20, 20, 5, 5, 20, -20, 120,
+var og_board = [
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0],
 ];
 
-var cadTablero = ''
+var heuristic_board = [
+  [120, -20, 20, 5, 5, 20, -20, 120],
+  [-20, -40, -5, -5, -5, -5, -40, -20],
+  [20, -5, 15, 3, 3, 15, -5, 20],
+  [5, -5, 3, 3, 3, 3, -5, 5],
+  [5, -5, 3, 3, 3, 3, -5, 5],
+  [20, -5, 15, 3, 3, 15, -5, 20],
+  [-20, -40, -5, -5, -5, -5, -40, -20],
+  [120, -20, 20, 5, 5, 20, -20, 120],
+];
 
-var board = [];
+var moves = [];
+var enemy_moves = [];
 
-function cadenaToArray() {
-  board = [];
-  for (var c of cadTablero) {
-    board.push(c);
+// ./ngrok http 3000
+// http://luisespino.com/temp/games/reversi/index.php
+
+function sort_and_clean_moves() {
+  let aux = new Set();
+  for (let item of moves) {
+    aux.add(item.spot);
   }
-  console.log(cadTablero);
+  moves = [];
+  for (let item of aux) {
+    moves.push({
+      spot: item,
+      h: heuristic_board[parseInt(item.split("")[0])][
+        parseInt(item.split("")[1])
+      ],
+    });
+  }
+  moves.sort((a, b) => {
+    if (a.h > b.h) return -1;
+    else return 1;
+  });
 }
 
-function imprimirTablero(tablero) {
-  let cadTemp = '';
-  let indiceX = 0;
-  for (var i = 0; i < tablero.length; i++) {
-    if (i % 8 == 0 && i != 0) {
-      console.log(indiceX, cadTemp + '|');
-      cadTemp = '';
-      indiceX++;
+function copy_array() {
+  let array = [
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 0, 0, 0],
+  ];
+
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      array[i][j] = og_board[i][j];
     }
-    cadTemp += '|' + tablero[i];
   }
-  console.log(indiceX, cadTemp);
+
+  return array;
 }
 
-function getX(pos) { return pos % 8; }
-function getY(pos) { return Math.floor(pos / 8); }
+function find_enemy_moves() {
+  if (enemy_moves.length == 0) return 0;
 
-
-function miniMax(tablero, depth, isMaximizing, indice) {
-
-  if (depth == 3) {
-    console.log("RET ", indice, heuristicas[indice]);
-    return [heuristicas[indice], indice];
+  let aux = new Set();
+  for (let item of enemy_moves) {
+    aux.add(item.spot);
   }
-  if (isMaximizing) {
-    let best = [-999, 0]
-
-    let tempMovs = posiblesMovimientos(tablero, jugador);
-    let indexBest = [0, 0];
-
-    if (tempMovs.length == 0) { return [heuristicas[indice], indice]; }
-    for (var item of tempMovs) {
-      let tempTablero = llenandoMovimientos(tablero, item, jugador);
-
-      let valor = miniMax(tempTablero, depth + 1, false, item[1]);
-      if (valor[0] > best[0]) indexBest = item;
-      best = valor[0] > best[0] ? valor : best;
-    }
-    if (depth == 0) {
-      best[1] = indexBest[1];
-      console.log("Movimientos depth 0 ", tempMovs);
-      console.log(" Finalizando Mejor (heuristica,indexDestino)", best, "DE: origen, destino,direccion ", indexBest);
-    }
-
-    return best;
-  } else {
-    let best = [999, 0];
-    let tempMovs = posiblesMovimientos(tablero, oponente);
-    if (tempMovs.length == 0) { return [heuristicas[indice], indice]; }
-    for (var item of tempMovs) {
-      let tempTablero = llenandoMovimientos(tablero, item, oponente);
-      let valor = miniMax(tempTablero, depth + 1, true, item[1]);
-      best = valor[0] < best[0] ? valor : best;
-    }
-
-    return best;
+  enemy_moves = [];
+  for (let item of aux) {
+    enemy_moves.push({
+      spot: item,
+      h: heuristic_board[parseInt(item.split("")[0])][
+        parseInt(item.split("")[1])
+      ],
+    });
   }
+  enemy_moves.sort((a, b) => {
+    if (a.h > b.h) return -1;
+    else return 1;
+  });
+  return enemy_moves[0].h;
 }
 
+function minimax(turn) {
+  enemy_moves = [];
 
+  var enemy = turn == "1" ? "0" : "1";
+  let map;
+  let x, y, pos, h;
+  moves = moves.slice(0, 4);
+  for (let i = 0; i < moves.length; i++) {
+    enemy_moves = [];
+    map = copy_array();
+    pos = moves[i].spot;
+    y = parseInt(pos.split("")[0]);
+    x = parseInt(pos.split("")[1]);
+    map[y][x] = turn;
+    enemy_moves = [];
+    find_enemy_spots(enemy, map);
+    h = find_enemy_moves();
+    moves[i].h = moves[i].h - h;
+  }
 
-function getPosiblesMovimientos(tablero, indice, jug) {
-  let tempIndex = 0;
-  let step = [-1, -9, -8, -7, 1, 9, 8, 7];
-  let dir = [-1, -1, 0, 1, 1, 1, 2, -1];
-  let movimientos = [];
-  let maxLeft = 0;
-  let maxUp = 0;
+  moves.sort((a, b) => {
+    if (a.h > b.h) return -1;
+    else return 1;
+  });
+  console.table(moves);
+}
 
-  let maxX = getX(indice);
-  let maxY = getY(indice);
-  let enemigo = false;
-  let maxMovs = 0;
+function find_move(move, rival, x, y, board) {
+  var x2 = 0,
+    y2 = 0;
+  let turno = rival == "1" ? "0" : "1";
+  if (move == 0) {
+    x2 = x;
+    for (y2 = y - 1; y2 > 0; y2--) {
+      x2--;
+      if (board[y2][x2] == rival && board[y2 - 1][x2 - 1] == "2") {
+        return y2 - 1 + "" + (x2 - 1);
+      } else if (board[y2][x2] == rival && board[y2 - 1][x2 - 1] == turno)
+        return '99'
+    }
+  } else if (move == 1) {
+    x2 = x;
+    for (y2 = y - 1; y2 > 0; y2--) {
+      if (board[y2][x2] == rival && board[y2 - 1][x2] == "2") {
+        return y2 - 1 + "" + x2;
+      } else if (board[y2][x2] == rival && board[y2 - 1][x2] == turno)
+        return '99'
+    }
+  } else if (move == 2) {
+    x2 = x;
+    for (y2 = y - 1; y2 > 0; y2--) {
+      x2++;
+      if (board[y2][x2] == rival && board[y2 - 1][x2 + 1] == "2") {
+        return y2 - 1 + "" + (x2 + 1);
+      } else if (board[y2][x2] == rival && board[y2 - 1][x2 + 1] == turno)
+        return '99'
+    }
+  } else if (move == 3) {
+    y2 = y;
+    for (x2 = x + 1; x2 < 7; x2++) {
+      if (board[y2][x2] == rival && board[y2][x2 + 1] == "2") {
+        return y2 + "" + (x2 + 1);
+      } else if (board[y2][x2] == rival && board[y2][x2 + 1] == turno)
+        return '99'
+    }
+  } else if (move == 4) {
+    x2 = x;
+    for (y2 = y + 1; y2 < 7; y2++) {
+      x2++;
+      if (board[y2][x2] == rival && board[y2 + 1][x2 + 1] == "2") {
+        return y2 + 1 + "" + (x2 + 1);
+      } else if (board[y2][x2] == rival && board[y2 + 1][x2 + 1] == turno)
+        return '99';
+    }
+  } else if (move == 5) {
+    x2 = x;
+    for (y2 = y + 1; y2 < 7; y2++) {
+      if (board[y2][x2] == rival && board[y2 + 1][x2] == "2") {
+        return y2 + 1 + "" + x2;
+      } else if (board[y2][x2] == rival && board[y2 + 1][x2] == turno)
+        return "99";
+    }
+  } else if (move == 6) {
+    x2 = x;
+    for (y2 = y + 1; y2 < 7; y2++) {
+      x2--;
+      if (board[y2][x2] == rival && board[y2 + 1][x2 - 1] == "2") {
+        return y2 + 1 + "" + (x2 - 1);
+      } else if (board[y2][x2] == rival && board[y2 + 1][x2 - 1] == turno)
+        return "99";
+    }
+  } else if (move == 7) {
+    y2 = y;
+    for (x2 = x - 1; x2 > 0; x2--) {
+      if (board[y2][x2] == rival && board[y2][x2 - 1] == "2") {
+        return y2 + "" + (x2 - 1);
+      } else if (board[y2][x2] == rival && board[y2][x2 - 1] == turno)
+        return "99";
 
-  for (var i = 0; i < step.length; i++) {
-    enemigo = false;
-    tempIndex = indice;
+    }
+  }
+  return "99";
+}
 
-    if (step[i] == -1) maxMovs = maxX;
-    else if (step[i] == -9) maxMovs = Math.min(maxX, maxY);
-    else if (step[i] == -8) maxMovs = maxY;
-    else if (step[i] == -7) maxMovs = Math.min(7 - maxX, maxY);
-    else if (step[i] == 1) maxMovs = 7 - maxX;
-    else if (step[i] == 9) maxMovs = Math.min((7 - maxX), (7 - maxY));
-    else if (step[i] == 8) maxMovs = 7 - maxY;
-    else if (step[i] == 7) maxMovs = Math.min(maxX, 7 - maxY);
-
-    console.log("Limite movs for:", indice, " cant. ", maxMovs, " step: ", step[i], " dir:", dir[i]);
-    for (var j = 0; j < maxMovs; j++) {
-      tempIndex += step[i];
-      if (tempIndex >= 0 && tempIndex <= 64) {
-
-        if (tablero[tempIndex] == jug) {
-
-          break;
-        } else if (tablero[tempIndex] == 2 && !enemigo) {
-          break;
-        } else if (tablero[tempIndex] == 2 && enemigo) {
-          movimientos.push([indice, tempIndex, step[i]]);
-          break;
-        } else if (tablero[tempIndex] != jug) {
-          enemigo = true;
+function find_spots(turn) {
+  let rival = turn == "1" ? "0" : "1";
+  let spot;
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) {
+      if (og_board[y][x] == turn) {
+        if (y - 1 > 0 && x - 1 > 0 && og_board[y - 1][x - 1] == rival) {
+          // Arriba a la izq
+          spot = find_move(0, rival, x, y, og_board);
+          if (spot != "99")
+            moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
         }
-      } else {
-        break;
+        if (y - 1 > 0 && og_board[y - 1][x] == rival) {
+          // Arriba
+          spot = find_move(1, rival, x, y, og_board);
+          if (spot != "99")
+            moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+        if (y - 1 > 0 && x + 1 < 7 && og_board[y - 1][x + 1] == rival) {
+          // Arriba Derecha
+          spot = find_move(2, rival, x, y, og_board);
+          if (spot != "99")
+            moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+        if (x + 1 < 7 && og_board[y][x + 1] == rival) {
+          // Derecha
+          spot = find_move(3, rival, x, y, og_board);
+          if (spot != "99")
+            moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+        if (y + 1 < 7 && x + 1 < 7 && og_board[y + 1][x + 1] == rival) {
+          // Abajo Derecha
+          spot = find_move(4, rival, x, y, og_board);
+          if (spot != "99")
+            moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+        if (y + 1 < 7 && og_board[y + 1][x] == rival) {
+          // Abajo
+          spot = find_move(5, rival, x, y, og_board);
+          if (spot != "99")
+            moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+        if (y + 1 < 7 && x - 1 > 0 && og_board[y + 1][x - 1] == rival) {
+          // Abajo Izq
+          spot = find_move(6, rival, x, y, og_board);
+          if (spot != "99")
+            moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+        if (x - 1 > 0 && og_board[y][x - 1] == rival) {
+          // Izquierda
+          spot = find_move(7, rival, x, y, og_board);
+          if (spot != "99")
+            moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
       }
-      indexX++;
-      indexY++;
     }
   }
-
-  return movimientos;
 }
 
+function find_enemy_spots(turn, board) {
+  let rival = turn == "1" ? "0" : "1";
+  let spot;
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) {
+      if (board[y][x] == turn) {
+        if (y - 1 > 0 && x - 1 > 0 && board[y - 1][x - 1] == rival) {
+          // Arriba a la izq
+          spot = find_move(0, rival, x, y, board);
+          if (spot != "99")
+            enemy_moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+        if (y - 1 > 0 && board[y - 1][x] == rival) {
+          // Arriba
+          spot = find_move(1, rival, x, y, board);
+          if (spot != "99")
+            enemy_moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+        if (y - 1 > 0 && x + 1 < 7 && board[y - 1][x + 1] == rival) {
+          // Arriba Derecha
+          spot = find_move(2, rival, x, y, board);
+          if (spot != "99")
+            enemy_moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+        if (x + 1 < 7 && board[y][x + 1] == rival) {
+          // Derecha
+          spot = find_move(3, rival, x, y, board);
+          if (spot != "99")
+            enemy_moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+        if (y + 1 < 7 && x + 1 < 7 && board[y + 1][x + 1] == rival) {
+          // Abajo Derecha
+          spot = find_move(4, rival, x, y, board);
+          if (spot != "99")
+            enemy_moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+        if (y + 1 < 7 && board[y + 1][x] == rival) {
+          // Abajo
+          spot = find_move(5, rival, x, y, board);
+          if (spot != "99")
+            enemy_moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+        if (y + 1 < 7 && x - 1 > 0 && board[y + 1][x - 1] == rival) {
+          // Abajo Izq
+          spot = find_move(6, rival, x, y, board);
+          if (spot != "99")
+            enemy_moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+        if (x - 1 > 0 && board[y][x - 1] == rival) {
+          // Izquierda
+          spot = find_move(7, rival, x, y, board);
+          if (spot != "99")
+            enemy_moves.push({
+              spot: spot,
+              h: heuristic_board[parseInt(spot.split("")[0])][
+                parseInt(spot.split("")[1])
+              ],
+            });
+        }
+      }
+    }
+  }
+}
 
-function llenandoMovimientos(tablero, arr, jug) {
-  let newTablero = Object.assign([], tablero);
-  //console.log(arr);
-  tempIndex = arr[0];
+function fill_board(estado) {
+  var y = 0,
+    x = 0;
+  if (estado != undefined) {
+    for (let z = 0; z < estado.length; z++) {
+      og_board[y][x] = estado[z];
+      x++;
+      if (x == 8) {
+        x = 0;
+        y++;
+      }
+    }
+  }
+}
 
-  for (var i = 0; i < 8; i++) {
-    tempIndex += arr[2];
+app.get("/", (req, res) => {
+  //variable reset
+  moves = [];
+  enemy_moves = [];
 
-    if (arr[2] > 0 && tempIndex <= arr[1]
-      || arr[2] < 0 && tempIndex >= arr[1]) {
-      newTablero[tempIndex] = jug + '';
+  var { turno, estado } = req.query;
+  estado = estado?.split("");
+  fill_board(estado);
+  find_spots(turno);
+  console.log("----------------------------------------");
+  console.table(moves);
+  sort_and_clean_moves();
+  minimax(turno);
+  console.log(`El turno es: ${turno}`);
+  console.log(`El spot es: ${moves[0].spot}`);
+  if (moves.length > 1) {
+    if (moves.length > 3 && moves[0].h == moves[1].h && moves[1].h == moves[2].h) {
+      let indx = getRandomInt(3);
+      console.log(indx);
+      console.log(`El spot random es: ${moves[indx].spot}`);
+      res.send(moves[indx].spot);
     } else {
-      break;
+      if (moves[0].h == moves[1].h) {
+        let indx = getRandomInt(2);
+        console.log(indx);
+        console.log(`El spot random es: ${moves[indx].spot}`);
+        res.send(moves[indx].spot);
+      } else res.send(moves[0].spot);
     }
-  }
-  return newTablero;
+  } else res.send(moves[0].spot);
+});
+
+function getRandomInt(max) {
+  return Math.floor(Math.random() * max);
 }
-
-function posiblesMovimientos(tablero, jug) {
-  let movimientos = [];
-  for (var i = 0; i < tablero.length; i++) {
-    if (tablero[i] == jug) {
-      movimientos = movimientos.concat(getPosiblesMovimientos(tablero, i, jug));
-
-    }
-  }
-
-  return movimientos;
-}
-
-
-function iniciar(tablero, jug) {
-
-  let valor = miniMax(tablero, 0, true, 0);
-  let cad = getY(valor[1]) + '' + getX(valor[1]);
-  console.log("RESULTADO (", valor, getY(valor[1]), ',', getX(valor[1]), ')');
-
-  return cad;
-
-}
-
-
-app.get('/', (req, res) => {
-  turno = req.query.turno;
-  estado = req.query.estado;
-  console.log(turno, estado);
-  jugador = turno;
-  oponente = jugador == 1 ? 0 : 1;
-  cadTablero = estado;
-  cadenaToArray();
-  imprimirTablero(board);
-  let resultado = iniciar(board, jugador);
-  console.log(jugador, "oponente: ", oponente);
-
-  res.send(resultado)
-})
 
 app.listen(port, () => {
-  console.log(`Proyecto en puerto: ${port}`)
+  console.log(`Proyecto corriendo en http://localhost:${port}`);
 });
