@@ -2,10 +2,7 @@ const express = require('express')
 const app = express()
 const port = process.env.PORT || 3000
 
-
-app.listen(port, () => {
-  console.log(`App corriendo en el puerto:${port}`)
-});
+var jugadores = ["NEGRAS", "BLANCAS"];
 
 var jugador;
 var oponente;
@@ -24,22 +21,6 @@ var heuristicas = [
 var cadTablero = ''
 
 var board = [];
-
-app.get('/', (req, res) => {
-  turno = req.query.turno;
-  estado = req.query.estado;
-  console.log(turno, estado);
-  jugador = turno;
-  oponente = jugador == 1 ? 0 : 1;
-  cadTablero = estado;
-  convertCadToArray();
-  printTablero(board);
-  let resultado = iniciar(board, jugador);
-
-  console.log(jugador, "oponente: ", oponente);
-
-  res.send(resultado)
-})
 
 function convertCadToArray() {
   board = [];
@@ -63,11 +44,17 @@ function printTablero(tablero) {
   console.log(indiceX, cadTemp);
 }
 
+function getOponente(jugador) {
+  return jugador == 1 ? 1 : 0;
+}
+
 function getX(pos) { return pos % 8; }
 function getY(pos) { return Math.floor(pos / 8); }
 
 
 function minimax(tablero, depth, isMaximizing, indice) {
+  //printTablero(tablero);
+  //console.log(isMaximizing,"profundidad ",depth);
   if (depth == 3) {
     console.log("RET ", indice, heuristicas[indice]);
     return [heuristicas[indice], indice];
@@ -76,7 +63,7 @@ function minimax(tablero, depth, isMaximizing, indice) {
     let best = [-999, 0]
 
     let tempMovs = allPosibleMovements(tablero, jugador);
-    let indexBest = [0, 0];
+    let indexBest = [0, 0]; // origen, destino
 
     if (tempMovs.length == 0) { return [heuristicas[indice], indice]; }
     for (var item of tempMovs) {
@@ -91,7 +78,7 @@ function minimax(tablero, depth, isMaximizing, indice) {
       console.log("Movimientos depth 0 ", tempMovs);
       console.log(" Finalizando Mejor (heuristica,indexDestino)", best, "DE: origen, destino,direccion ", indexBest);
     }
-
+    //console.log('Finalizando iteracion max',best,'profundidad',depth,"jugador", jugador);
     return best;
   } else {
     let best = [999, 0];
@@ -102,6 +89,7 @@ function minimax(tablero, depth, isMaximizing, indice) {
       let valor = minimax(tempTablero, depth + 1, true, item[1]);
       best = valor[0] < best[0] ? valor : best;
     }
+    //console.log('Finalizando iteracion MIN',best,'profundidad',depth,"jugador",oponente);
 
     return best;
   }
@@ -127,7 +115,7 @@ function getPosiblesMovimientos(tablero, indice, jug) {
   for (var i = 0; i < step.length; i++) { // posibles direcciones
     enemigo = false;
     tempIndex = indice;
-  
+    //maxMovs=dir[i]==-1?maxX:(dir[i]==1?8-maxX:(dir[i]==0?maxY:8-maxY));
     if (step[i] == -1) maxMovs = maxX;
     else if (step[i] == -9) maxMovs = Math.min(maxX, maxY);
     else if (step[i] == -8) maxMovs = maxY;
@@ -138,12 +126,12 @@ function getPosiblesMovimientos(tablero, indice, jug) {
     else if (step[i] == 7) maxMovs = Math.min(maxX, 7 - maxY);
 
     console.log("Limite movs for:", indice, " cant. ", maxMovs, " step: ", step[i], " dir:", dir[i]);
-    for (var j = 0; j < maxMovs; j++) {
+    for (var j = 0; j < maxMovs; j++) { // cantidad maxima de pasos maximos
       tempIndex += step[i];
       if (tempIndex >= 0 && tempIndex <= 64) {
-        
+        //console.log(tablero[tempIndex],jug);
         if (tablero[tempIndex] == jug) {
-          
+          //console.log("Jugadores iguales ",indice,tempIndex);
           break;
         } else if (tablero[tempIndex] == 2 && !enemigo) {
           break;
@@ -172,14 +160,16 @@ function fillingMovs(tablero, arr, jug) {
 
   for (var i = 0; i < 8; i++) {
     tempIndex += arr[2];
-    
-    if (arr[2] > 0 && tempIndex <= arr[1]
-      || arr[2] < 0 && tempIndex >= arr[1]) {
+    //console.log("Indice Actual",tempIndex,arr[2]>0 && tempIndex<=arr[1],
+    //  arr[2]<0 && tempIndex>=arr[1]);
+    if (arr[2] > 0 && tempIndex <= arr[1] // si step es positivo el indice debe ser menor que el limite superior
+      || arr[2] < 0 && tempIndex >= arr[1]) { //si step es negativo, el indice debe ser mayor al limite inferior
       newTablero[tempIndex] = jug + '';
     } else {
       break;
     }
   }
+  //console.log("TABLERO NUEVO" ,newTablero);
   return newTablero;
 }
 
@@ -187,6 +177,7 @@ function allPosibleMovements(tablero, jug) {
   let movimientos = [];
   for (var i = 0; i < tablero.length; i++) {
     if (tablero[i] == jug) {
+      //console.log("MOV. POS., pos ",i," - x:",getX(i),"y:",getY(i),jugadores[jugador]);
       movimientos = movimientos.concat(getPosiblesMovimientos(tablero, i, jug));
 
     }
@@ -205,3 +196,26 @@ function iniciar(tablero, jug) {
   return cad;
 
 }
+
+
+app.get('/', (req, res) => {
+  turno = req.query.turno;
+  estado = req.query.estado;
+  console.log(turno, estado);
+  jugador = turno;
+  oponente = jugador == 1 ? 0 : 1;
+  cadTablero = estado;
+  convertCadToArray();
+  printTablero(board);
+  let resultado = iniciar(board, jugador);
+  //let s= allPosibleMovements(board,jugador);
+  //let cad= getY(s[0][1])+''+getX(s[0][1]);
+  //console.log("Final ",cad);
+  console.log(jugador, "oponente: ", oponente);
+
+  res.send(resultado)
+})
+
+app.listen(port, () => {
+  console.log(` Running on port :${port}`)
+});
